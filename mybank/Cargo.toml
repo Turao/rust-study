@@ -10,4 +10,9 @@ cqrs-es = "0.4.2"
 async-trait = "0.1.52"
 serde = { version = "1.0", features = ["derive"]}
 tokio = { version = "1", features = ["full"] }
+postgres-es = "0.4.8"
+sqlx = "0.6.3"
+log = "0.4.17"
+simplelog = "0.12.1"
+chrono = "0.4.24"
 

@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use cqrs_es::{Aggregate, AggregateError};
+use cqrs_es::{Aggregate};
 use serde::{Serialize, Deserialize};
 
 use crate::{commands::BankAccountCommand, domain_events::BankAccountEvent, errors::BankAccountError, services::BankAccountServices};
 
 #[derive(Serialize, Default, Deserialize)]
 pub struct BankAccount {
-  opened: bool,
+  account_id: String,
   balance: f64, // example purposes only - dont use float in real life
 }
 
@@ -27,6 +27,9 @@ impl Aggregate for BankAccount {
       services: &Self::Services,
   ) -> Result<Vec<Self::Event>, Self::Error> {
       match command {
+        BankAccountCommand::OpenAccount { account_id } => {
+          Ok(vec![BankAccountEvent::AcountOpened { account_id }])
+        },
         BankAccountCommand::DepositMoney { amount } => {
         let balance = self.balance + amount;
         Ok(vec![BankAccountEvent::CustomerDepositedMoney{
@@ -43,6 +46,14 @@ impl Aggregate for BankAccount {
           amount,
           balance,
         }])
+      },
+      BankAccountCommand::WriteCheck { check_number, amount } => {
+        let balance = self.balance - amount;
+        Ok(vec![BankAccountEvent::CustomerWroteCheck {
+          check_number,
+          amount,
+          balance,
+        }])
       }
         _ => todo!()
     }
@@ -51,8 +62,8 @@ impl Aggregate for BankAccount {
 
     fn apply(&mut self, event: Self::Event) {
         match event {
-          BankAccountEvent::AcountOpened { .. } => {
-            self.opened = true
+          BankAccountEvent::AcountOpened { account_id } => {
+            self.account_id = account_id
           },
           BankAccountEvent::CustomerDepositedMoney { amount: _, balance } => {
             self.balance = balance
