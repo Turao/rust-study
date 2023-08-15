@@ -1,6 +1,6 @@
-use crate::groups::Group;
-use crate::operations::Operation;
-use crate::subjects::Subject;
+use crate::domain::groups::Group;
+use crate::domain::operations::Operation;
+use crate::domain::subjects::Subject;
 
 pub struct AccessChecker {}
 

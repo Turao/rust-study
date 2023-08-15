@@ -1,21 +1,35 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use sqlx::{Sqlite, Error, FromRow};
+use sqlx::{Sqlite, FromRow};
 use sqlx::pool::Pool;
 
 use chrono::{Utc, TimeZone};
 
-use crate::permissions::{PermissionId, Permission};
-use crate::subjects::{SubjectId, Subject};
+use crate::domain::operations::Operation;
+use crate::domain::permissions::{PermissionId, Permission};
+use crate::domain::resources::Resource;
+use crate::domain::subjects::{SubjectId, Subject};
+
+#[derive(Debug)]
+pub enum RepositoryError {
+    SqlxError(sqlx::Error),
+}
+
+impl From<sqlx::Error> for RepositoryError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::SqlxError(value)
+    }
+}
 
 #[async_trait]
 pub trait Repository<Id, Entity> {
-    async fn get_by_id(&self, id: Id) -> Result<Option<Entity>, Error>;
-    async fn save(&self, entity: Entity) -> Result<(), Error>;
+    async fn get_by_id(&self, id: Id) -> Result<Option<Entity>, RepositoryError>;
+    async fn save(&self, entity: Entity) -> Result<(), RepositoryError>;
 }
 
 
+#[derive(Debug)]
 pub struct SqlitePermissionRepository {
     connection_pool: Pool<Sqlite>
 }
@@ -30,7 +44,7 @@ impl SqlitePermissionRepository {
 
 #[async_trait]
 impl Repository<PermissionId, Permission> for SqlitePermissionRepository {
-    async fn get_by_id(&self, id: PermissionId) -> Result<Option<Permission>, Error> {
+    async fn get_by_id(&self, id: PermissionId) -> Result<Option<Permission>, RepositoryError> {
         let mut connection = self.connection_pool.acquire().await?;
         let query = "SELECT * FROM permissions WHERE id = ?";
         let permission = sqlx::query_as::<_, SqlitePermissionRepositoryModel>(query)
@@ -40,7 +54,7 @@ impl Repository<PermissionId, Permission> for SqlitePermissionRepository {
         Ok(permission)
     }
 
-    async fn save(&self, entity: Permission) -> Result<(), Error> {
+    async fn save(&self, entity: Permission) -> Result<(), RepositoryError> {
         let model = SqlitePermissionRepositoryModel::from(entity);
         let mut connection = self.connection_pool.acquire().await?;
         let query = "INSERT INTO permissions VALUES(?, ?, ?, ?, ?);";
@@ -81,7 +95,7 @@ impl From<SqlitePermissionRepositoryModel> for Permission {
         Permission::builder()
             .id(PermissionId::from(value.id))
             .name(value.name)
-            .operation(crate::operations::Operation::Invoke(crate::resources::Resource::Service("test".to_string())))
+            .operation(Operation::Invoke(Resource::Service("test".to_string())))
             .created_at(Utc.timestamp_millis_opt(value.created_at).single().unwrap_or_default())
             .updated_at(Utc.timestamp_millis_opt(value.updated_at).single().unwrap_or_default())
             .build()
@@ -102,7 +116,7 @@ impl SqliteSubjectRepository {
 
 #[async_trait]
 impl Repository<SubjectId, Subject> for SqliteSubjectRepository {
-    async fn save(&self, entity: Subject) -> Result<(), Error> {
+    async fn save(&self, entity: Subject) -> Result<(), RepositoryError> {
         let model = SqliteSubjectModel::from(entity);
         let mut connection = self.connection_pool.acquire().await?;
         let query = "INSERT INTO subjects VALUES (?, ?, ?, ?, ?);";
@@ -116,7 +130,7 @@ impl Repository<SubjectId, Subject> for SqliteSubjectRepository {
         Ok(())
     }
     
-    async fn get_by_id(&self, id: SubjectId) -> Result<Option<Subject>, Error> {
+    async fn get_by_id(&self, id: SubjectId) -> Result<Option<Subject>, RepositoryError> {
         let mut connection = self.connection_pool.acquire().await?;
         let query = "SELECT * FROM subjects WHERE id = ?;";
         let subject = sqlx::query_as::<_, SqliteSubjectModel>(query)

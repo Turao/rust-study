@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::operations::Operation;
+use super::operations::Operation;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct PermissionId(String);

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::roles::{RoleId, Role};
+use super::roles::{RoleId, Role};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SubjectId(String);
