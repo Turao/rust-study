@@ -8,26 +8,15 @@ use chrono::{Utc, TimeZone};
 
 use crate::domain::operations::Operation;
 use crate::domain::permissions::{PermissionId, Permission};
+use crate::domain::repositories::{RepositoryError, Repository};
 use crate::domain::resources::Resource;
 use crate::domain::subjects::{SubjectId, Subject};
 
-#[derive(Debug)]
-pub enum RepositoryError {
-    SqlxError(sqlx::Error),
-}
-
 impl From<sqlx::Error> for RepositoryError {
     fn from(value: sqlx::Error) -> Self {
-        Self::SqlxError(value)
+        Self::Simple(value.to_string())
     }
 }
-
-#[async_trait]
-pub trait Repository<Id, Entity> {
-    async fn get_by_id(&self, id: Id) -> Result<Option<Entity>, RepositoryError>;
-    async fn save(&self, entity: Entity) -> Result<(), RepositoryError>;
-}
-
 
 #[derive(Debug)]
 pub struct SqlitePermissionRepository {

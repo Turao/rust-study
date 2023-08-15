@@ -1,14 +1,14 @@
-use crate::repositories::{SqlitePermissionRepository, Repository, SqliteSubjectRepository};
 use sqlx::sqlite::SqlitePool;
 use tracing::info;
 
-mod domain;
+use crate::domain::repositories::{Repository, RepositoryError};
 
-mod access_checker;
-mod repositories;
+mod domain;
+mod application;
+mod infrastructure;
 
 #[async_std::main]
-async fn main() -> Result<(), repositories::RepositoryError> {
+async fn main() -> Result<(), RepositoryError> {
     let subscriber = tracing_subscriber::FmtSubscriber::default();
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global tracing subscriber");
 
@@ -44,20 +44,20 @@ async fn main() -> Result<(), repositories::RepositoryError> {
     let mut john = domain::subjects::Subject::new("john");
     john.add_role(engineer_role);
 
-    let ok = access_checker::AccessChecker::can_subject_perform_operation(&john, &list_users_operation);
+    let ok = application::access_checker::AccessChecker::can_subject_perform_operation(&john, &list_users_operation);
     info!("ok: {:?}", ok);
 
     let connection_pool = SqlitePool::connect(":memory").await?;
     let mut connection = connection_pool.acquire().await?;
     sqlx::migrate!("./datastore/sqlite").run(&mut connection).await.expect("unable to migrate");
     
-    let permission_repository = SqlitePermissionRepository::new(connection_pool.clone());
+    let permission_repository = infrastructure::repositories::SqlitePermissionRepository::new(connection_pool.clone());
     permission_repository.save(list_users_permission.clone()).await?;
     permission_repository.save(update_user_permission.clone()).await?;
 
     info!("{:?}", permission_repository.get_by_id(list_users_permission.get_id()).await?.unwrap());
 
-    let subject_repository = SqliteSubjectRepository::new(connection_pool.clone());
+    let subject_repository = infrastructure::repositories::SqliteSubjectRepository::new(connection_pool.clone());
     let john_wick = domain::subjects::Subject::new("john wick");
     let baba_yaga = domain::subjects::Subject::new("baba yaga");
     subject_repository.save(john_wick.clone()).await?;
