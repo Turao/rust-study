@@ -1,14 +1,14 @@
 use sqlx::sqlite::SqlitePool;
 use tracing::info;
 
-use crate::domain::repositories::{Repository, RepositoryError};
+use crate::domain::repositories::{Repository, Error};
 
 mod domain;
 mod application;
 mod infrastructure;
 
 #[async_std::main]
-async fn main() -> Result<(), RepositoryError> {
+async fn main() -> Result<(), Error> {
     let subscriber = tracing_subscriber::FmtSubscriber::default();
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global tracing subscriber");
 

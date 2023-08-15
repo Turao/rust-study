@@ -8,11 +8,11 @@ use chrono::{Utc, TimeZone};
 
 use crate::domain::operations::Operation;
 use crate::domain::permissions::{PermissionId, Permission};
-use crate::domain::repositories::{RepositoryError, Repository};
+use crate::domain::repositories::{Error, Repository};
 use crate::domain::resources::Resource;
 use crate::domain::subjects::{SubjectId, Subject};
 
-impl From<sqlx::Error> for RepositoryError {
+impl From<sqlx::Error> for Error {
     fn from(value: sqlx::Error) -> Self {
         Self::Simple(value.to_string())
     }
@@ -33,7 +33,7 @@ impl SqlitePermissionRepository {
 
 #[async_trait]
 impl Repository<PermissionId, Permission> for SqlitePermissionRepository {
-    async fn get_by_id(&self, id: PermissionId) -> Result<Option<Permission>, RepositoryError> {
+    async fn get_by_id(&self, id: PermissionId) -> Result<Option<Permission>, Error> {
         let mut connection = self.connection_pool.acquire().await?;
         let query = "SELECT * FROM permissions WHERE id = ?";
         let permission = sqlx::query_as::<_, SqlitePermissionRepositoryModel>(query)
@@ -43,7 +43,7 @@ impl Repository<PermissionId, Permission> for SqlitePermissionRepository {
         Ok(permission)
     }
 
-    async fn save(&self, entity: Permission) -> Result<(), RepositoryError> {
+    async fn save(&self, entity: Permission) -> Result<(), Error> {
         let model = SqlitePermissionRepositoryModel::from(entity);
         let mut connection = self.connection_pool.acquire().await?;
         let query = "INSERT INTO permissions VALUES(?, ?, ?, ?, ?);";
@@ -105,7 +105,7 @@ impl SqliteSubjectRepository {
 
 #[async_trait]
 impl Repository<SubjectId, Subject> for SqliteSubjectRepository {
-    async fn save(&self, entity: Subject) -> Result<(), RepositoryError> {
+    async fn save(&self, entity: Subject) -> Result<(), Error> {
         let model = SqliteSubjectModel::from(entity);
         let mut connection = self.connection_pool.acquire().await?;
         let query = "INSERT INTO subjects VALUES (?, ?, ?, ?, ?);";
@@ -119,7 +119,7 @@ impl Repository<SubjectId, Subject> for SqliteSubjectRepository {
         Ok(())
     }
     
-    async fn get_by_id(&self, id: SubjectId) -> Result<Option<Subject>, RepositoryError> {
+    async fn get_by_id(&self, id: SubjectId) -> Result<Option<Subject>, Error> {
         let mut connection = self.connection_pool.acquire().await?;
         let query = "SELECT * FROM subjects WHERE id = ?;";
         let subject = sqlx::query_as::<_, SqliteSubjectModel>(query)
