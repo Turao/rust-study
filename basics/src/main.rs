@@ -1,4 +1,3 @@
-use domain::resources::ResourceId;
 use sqlx::sqlite::SqlitePool;
 use tracing::info;
 
@@ -13,17 +12,15 @@ async fn main() -> Result<(), Error> {
     let subscriber = tracing_subscriber::FmtSubscriber::default();
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global tracing subscriber");
 
-    let list_users_operation = domain::operations::Operation::Invoke(
-        domain::resources::Resource::new("users/get_users"),
-    );
+    let list_users_resource = domain::resources::Resource::new("users/get_users");
+    let list_users_operation = domain::operations::Operation::Invoke(list_users_resource.clone());
     let list_users_permission = domain::permissions::Permission::new(
         "list users",
         list_users_operation.clone(),
     );
 
-    let update_user_operation = domain::operations::Operation::Invoke(
-        domain::resources::Resource::new("users/update_users"),
-    );
+    let update_user_resource = domain::resources::Resource::new("users/update_user");
+    let update_user_operation = domain::operations::Operation::Invoke(update_user_resource);
     let update_user_permission = domain::permissions::Permission::new(
         "update user",
         update_user_operation.clone(),
@@ -71,6 +68,12 @@ async fn main() -> Result<(), Error> {
     // group.add_subject(subjects::Subject::new("bart").get_id());
     // group.add_subject(subjects::Subject::new("lisa").get_id());
     
+
+    let access_checker = application::access_checker::AccessChecker::new(Box::new(subject_repository));
+    let can_access = access_checker.can_access(john.get_id(), list_users_resource.get_id())
+        .await
+        .expect("failed to check if can access");
+    info!("{:?}", can_access);
 
     Ok(())
 }
