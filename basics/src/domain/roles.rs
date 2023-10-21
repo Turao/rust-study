@@ -1,11 +1,12 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
-use super::permissions::{PermissionId, Permission};
+use super::permissions::PermissionId;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct RoleId(String);
 
 impl Default for RoleId {
@@ -18,7 +19,7 @@ impl Default for RoleId {
 pub struct Role {
     id: RoleId,
     name: String,
-    permissions: HashMap<PermissionId, Permission>,
+    permissions: HashSet<PermissionId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -28,7 +29,7 @@ impl Role {
         Role {
             id: RoleId::default(),
             name: name.to_string(),
-            permissions: HashMap::new(),
+            permissions: HashSet::new(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
@@ -38,12 +39,24 @@ impl Role {
         self.id.clone()
     }
 
-    pub fn add_permission(&mut self, permission: Permission) {
-        self.permissions.insert(permission.get_id(), permission);
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn add_permission(&mut self, permission: PermissionId) {
+        self.permissions.insert(permission);
         self.updated_at = Utc::now();
     }
 
-    pub fn get_permissions(&self) -> Vec<&Permission> {
-        self.permissions.values().collect()
+    pub fn get_permissions(&self) -> HashSet<PermissionId> {
+        self.permissions.clone()
+    }
+
+    pub fn get_created_at(&self) -> DateTime<Utc> {
+        self.created_at.clone()
+    }
+
+    pub fn get_updated_at(&self) -> DateTime<Utc> {
+        self.updated_at.clone()
     }
 }

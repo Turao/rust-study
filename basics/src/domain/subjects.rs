@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use super::roles::{RoleId, Role};
+use super::roles::RoleId;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SubjectId(String);
@@ -30,7 +30,7 @@ impl Into<String> for SubjectId {
 pub struct Subject {
     id: SubjectId,
     name: String,
-    roles: HashMap<RoleId, Role>,
+    roles: HashSet<RoleId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -40,7 +40,7 @@ impl Subject {
         Subject {
             id: SubjectId::default(),
             name: name.to_string(),
-            roles: HashMap::new(),
+            roles: HashSet::new(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
@@ -58,18 +58,18 @@ impl Subject {
         self.name.clone()
     }
 
-    pub fn add_role(&mut self, role: Role) {
-        self.roles.insert(role.get_id(), role);
+    pub fn add_role(&mut self, roles: RoleId) {
+        self.roles.insert(roles);
         self.updated_at = Utc::now();
     }
 
-    pub fn remove_role(&mut self, role_id: &RoleId) {
-        self.roles.remove(role_id);
+    pub fn remove_role(&mut self, role: &RoleId) {
+        self.roles.remove(role);
         self.updated_at = Utc::now();
     }
 
-    pub fn get_roles(&self) -> Vec<&Role> {
-        self.roles.values().collect()
+    pub fn get_roles(&self) -> HashSet<RoleId> {
+        self.roles.clone()
     }
 
     pub fn get_created_at(&self) -> DateTime<Utc> {
@@ -86,7 +86,7 @@ impl Subject {
 pub struct SubjectBuilder {
     id: Option<SubjectId>,
     name: Option<String>,
-    roles: Option<HashMap<RoleId, Role>>,
+    roles: Option<HashSet<RoleId>>,
     created_at: Option<DateTime<Utc>>,
     updated_at: Option<DateTime<Utc>>,
 }
@@ -112,7 +112,7 @@ impl SubjectBuilder {
         self
     }
 
-    pub fn roles(mut self, roles: HashMap<RoleId, Role>) -> SubjectBuilder {
+    pub fn roles(mut self, roles: HashSet<RoleId>) -> SubjectBuilder {
         self.roles = Some(roles);
         self
     }

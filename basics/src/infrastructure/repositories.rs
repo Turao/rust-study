@@ -6,10 +6,8 @@ use sqlx::pool::Pool;
 
 use chrono::{Utc, TimeZone};
 
-use crate::domain::operations::Operation;
 use crate::domain::permissions::{PermissionId, Permission};
 use crate::domain::repositories::{Error, Repository};
-use crate::domain::resources::Resource;
 use crate::domain::subjects::{SubjectId, Subject};
 
 impl From<sqlx::Error> for Error {
@@ -68,11 +66,11 @@ struct SqlitePermissionRepositoryModel {
 }
 
 impl From<Permission> for SqlitePermissionRepositoryModel {
-    fn from(value: Permission) -> Self {        
+    fn from(value: Permission) -> Self {      
         Self {
             id: value.get_id().into(),
             name: value.get_name(),
-            operation: "".to_string(),
+            operation: serde_json::to_string(&value.get_operation()).unwrap(),
             created_at: value.get_created_at().timestamp_millis(),
             updated_at: value.get_updated_at().timestamp_millis(),
         }
@@ -84,7 +82,7 @@ impl From<SqlitePermissionRepositoryModel> for Permission {
         Permission::builder()
             .id(PermissionId::from(value.id))
             .name(value.name)
-            .operation(Operation::Invoke(Resource::Service("test".to_string())))
+            .operation(serde_json::from_str(&value.operation).unwrap())
             .created_at(Utc.timestamp_millis_opt(value.created_at).single().unwrap_or_default())
             .updated_at(Utc.timestamp_millis_opt(value.updated_at).single().unwrap_or_default())
             .build()
@@ -144,7 +142,7 @@ impl From<Subject> for SqliteSubjectModel {
         Self {
             id: value.get_id().into(),
             name: value.get_name(),
-            roles: "".to_string(),
+            roles: serde_json::to_string(&value.get_roles()).unwrap(),
             created_at: value.get_created_at().timestamp_millis(),
             updated_at: value.get_updated_at().timestamp_millis()
         }
@@ -156,7 +154,7 @@ impl From<SqliteSubjectModel> for Subject {
         Subject::builder()
             .id(value.id.into())
             .name(value.name)
-            .roles(HashMap::new())
+            .roles(serde_json::from_str(&value.roles).unwrap())
             .created_at(Utc.timestamp_millis_opt(value.created_at).single().unwrap_or_default())
             .updated_at(Utc.timestamp_millis_opt(value.updated_at).single().unwrap_or_default())
             .build()

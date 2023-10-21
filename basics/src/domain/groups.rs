@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use super::subjects::SubjectId;
-use super::roles::{RoleId, Role};
+use super::roles::RoleId;
 
 #[derive(Debug)]
 pub struct GroupId(String);
@@ -19,8 +19,7 @@ pub struct Group {
     id: GroupId,
     name: String,
     subjects: HashSet<SubjectId>,
-    roles: HashMap<RoleId, Role>,
-
+    roles: HashSet<RoleId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -31,7 +30,7 @@ impl Group {
             id: GroupId::default(),
             name: name.to_string(),
             subjects: HashSet::new(),
-            roles: HashMap::new(),
+            roles: HashSet::new(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
@@ -51,8 +50,8 @@ impl Group {
         &self.subjects
     }
 
-    pub fn add_role(&mut self, role: Role) {
-        self.roles.insert(role.get_id(), role);
+    pub fn add_role(&mut self, role: RoleId) {
+        self.roles.insert(role);
         self.updated_at = Utc::now();
     }
 
@@ -61,7 +60,7 @@ impl Group {
         self.updated_at = Utc::now();
     }
 
-    pub fn get_roles(&self) -> Vec<&Role> {
-        self.roles.values().collect()
+    pub fn get_roles(&self) -> HashSet<RoleId> {
+        self.roles.clone()
     }
 }
