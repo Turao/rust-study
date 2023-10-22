@@ -7,7 +7,9 @@ use crate::domain::permissions::Permission;
 use crate::domain::resources::Resource;
 use crate::domain::roles::Role;
 use crate::domain::subjects::Subject;
+use crate::domain::groups::Group;
 
+use crate::infrastructure::sqlite::group::SqliteGroupRepository;
 use crate::infrastructure::sqlite::permission::SqlitePermissionRepository;
 use crate::infrastructure::sqlite::role::SqliteRoleRepository;
 use crate::infrastructure::sqlite::subject::SqliteSubjectRepository;
@@ -48,37 +50,40 @@ async fn main() -> Result<(), Error> {
     let role = role_repository.get_by_id(engineer_role.get_id()).await?.unwrap();
     info!("{:?}", role);
 
-    let mut john = Subject::new("john");
-    john.add_role(engineer_role.get_id());
-    
     let permission_repository = SqlitePermissionRepository::new(connection_pool.clone());
     permission_repository.save(list_users_permission.clone()).await?;
     permission_repository.save(update_user_permission.clone()).await?;
 
     info!("{:?}", permission_repository.get_by_id(list_users_permission.get_id()).await?.unwrap());
 
-    let subject_repository = SqliteSubjectRepository::new(connection_pool.clone());
-    subject_repository.save(john.clone()).await?;
-
     let john_wick = Subject::new("john wick");
     let baba_yaga = Subject::new("baba yaga");
+
+    let subject_repository = SqliteSubjectRepository::new(connection_pool.clone());
     subject_repository.save(john_wick.clone()).await?;
     subject_repository.save(baba_yaga.clone()).await?;
 
-    info!("{:?}", subject_repository.get_by_id(john.get_id()).await?.unwrap());
     info!("{:?}", subject_repository.get_by_id(john_wick.get_id()).await?.unwrap());
     info!("{:?}", subject_repository.get_by_id(baba_yaga.get_id()).await?.unwrap());
     
-    let mut subject = subject_repository.get_by_id(john.get_id())
+    let mut subject = subject_repository.get_by_id(john_wick.get_id())
         .await
-        .expect("failed to fetch john")
-        .expect("john not found");
+        .expect("failed to fetch john wick")
+        .expect("john wick not found");
 
     subject.rename("shaggy");
     subject.rename("scooby");
     info!("subject: {:?}", subject);
 
     subject_repository.save(subject).await.expect("failed to save subject");
+
+    let mut employees_group = Group::new("employees");
+    employees_group.add_subject(john_wick.get_id());
+    employees_group.add_subject(baba_yaga.get_id());
+    employees_group.add_role(engineer_role.get_id());
+
+    let group_repository = SqliteGroupRepository::new(connection_pool);
+    group_repository.save(employees_group).await.expect("failed to save employees group");
 
     let access_checker = application::access_checker::AccessChecker::new(
         Box::new(subject_repository),
@@ -89,6 +94,8 @@ async fn main() -> Result<(), Error> {
         .await
         .expect("failed to check if can invoke");
     info!("{:?}", can_invoke);
+
+    
 
     Ok(())
 }

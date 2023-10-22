@@ -1,11 +1,12 @@
 use std::collections::HashSet;
 
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 use super::roles::RoleId;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct SubjectId(String);
 
 impl Default for SubjectId {
