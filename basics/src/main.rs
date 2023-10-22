@@ -2,6 +2,15 @@ use sqlx::sqlite::SqlitePool;
 use tracing::info;
 
 use crate::domain::repositories::{Repository, Error};
+use crate::domain::operations::Operation;
+use crate::domain::permissions::Permission;
+use crate::domain::resources::Resource;
+use crate::domain::roles::Role;
+use crate::domain::subjects::Subject;
+
+use crate::infrastructure::sqlite::permission::SqlitePermissionRepository;
+use crate::infrastructure::sqlite::role::SqliteRoleRepository;
+use crate::infrastructure::sqlite::subject::SqliteSubjectRepository;
 
 mod domain;
 mod application;
@@ -12,21 +21,21 @@ async fn main() -> Result<(), Error> {
     let subscriber = tracing_subscriber::FmtSubscriber::default();
     tracing::subscriber::set_global_default(subscriber).expect("unable to set global tracing subscriber");
 
-    let list_users_resource = domain::resources::Resource::new("users/get_users");
-    let list_users_operation = domain::operations::Operation::Invoke(list_users_resource.clone());
-    let list_users_permission = domain::permissions::Permission::new(
+    let list_users_resource = Resource::new("users/get_users");
+    let list_users_operation = Operation::Invoke(list_users_resource.clone());
+    let list_users_permission = Permission::new(
         "list users",
         list_users_operation.clone(),
     );
 
-    let update_user_resource = domain::resources::Resource::new("users/update_user");
-    let update_user_operation = domain::operations::Operation::Invoke(update_user_resource);
-    let update_user_permission = domain::permissions::Permission::new(
+    let update_user_resource = Resource::new("users/update_user");
+    let update_user_operation = Operation::Invoke(update_user_resource);
+    let update_user_permission = Permission::new(
         "update user",
         update_user_operation.clone(),
     );
 
-    let mut engineer_role = domain::roles::Role::new("engineer");
+    let mut engineer_role = Role::new("engineer");
     engineer_role.add_permission(list_users_permission.get_id());
     engineer_role.add_permission(update_user_permission.get_id());
     for permission in engineer_role.get_permissions() {
@@ -37,25 +46,25 @@ async fn main() -> Result<(), Error> {
     let mut connection = connection_pool.acquire().await?;
     sqlx::migrate!("./datastore/sqlite").run(&mut connection).await.expect("unable to migrate");
 
-    let role_repository = infrastructure::sqlite::role::SqliteRoleRepository::new(connection_pool.clone());
+    let role_repository = SqliteRoleRepository::new(connection_pool.clone());
     role_repository.save(engineer_role.clone()).await?;
     let role = role_repository.get_by_id(engineer_role.get_id()).await?.unwrap();
     info!("{:?}", role);
 
-    let mut john = domain::subjects::Subject::new("john");
+    let mut john = Subject::new("john");
     john.add_role(engineer_role.get_id());
     
-    let permission_repository = infrastructure::sqlite::permission::SqlitePermissionRepository::new(connection_pool.clone());
+    let permission_repository = SqlitePermissionRepository::new(connection_pool.clone());
     permission_repository.save(list_users_permission.clone()).await?;
     permission_repository.save(update_user_permission.clone()).await?;
 
     info!("{:?}", permission_repository.get_by_id(list_users_permission.get_id()).await?.unwrap());
 
-    let subject_repository = infrastructure::sqlite::subject::SqliteSubjectRepository::new(connection_pool.clone());
+    let subject_repository = SqliteSubjectRepository::new(connection_pool.clone());
     subject_repository.save(john.clone()).await?;
 
-    let john_wick = domain::subjects::Subject::new("john wick");
-    let baba_yaga = domain::subjects::Subject::new("baba yaga");
+    let john_wick = Subject::new("john wick");
+    let baba_yaga = Subject::new("baba yaga");
     subject_repository.save(john_wick.clone()).await?;
     subject_repository.save(baba_yaga.clone()).await?;
 
