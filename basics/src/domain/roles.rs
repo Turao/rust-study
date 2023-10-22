@@ -15,6 +15,18 @@ impl Default for RoleId {
     }
 }
 
+impl From<String> for RoleId {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl Into<String> for RoleId {
+    fn into(self) -> String {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Role {
     id: RoleId,
@@ -33,6 +45,10 @@ impl Role {
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
+    }
+
+    pub fn builder() -> RoleBuilder {
+        RoleBuilder::new()
     }
 
     pub fn get_id(&self) -> RoleId {
@@ -58,5 +74,60 @@ impl Role {
 
     pub fn get_updated_at(&self) -> DateTime<Utc> {
         self.updated_at.clone()
+    }
+}
+
+pub struct RoleBuilder {
+    id: Option<RoleId>,
+    name: Option<String>,
+    permissions: Option<HashSet<PermissionId>>,
+    created_at: Option<DateTime<Utc>>,
+    updated_at: Option<DateTime<Utc>>,
+}
+
+impl RoleBuilder {
+    pub fn new() -> RoleBuilder {
+        Self {
+            id: None,
+            name: None,
+            permissions: None,
+            created_at: None,
+            updated_at: None,
+        }
+    }
+
+    pub fn id(mut self, id: RoleId) -> RoleBuilder {
+        self.id = Some(id);
+        self
+    }
+
+    pub fn name(mut self, name: String) -> RoleBuilder {
+        self.name = Some(name);
+        self
+    }
+
+    pub fn permissions(mut self, permissions: HashSet<PermissionId>) -> RoleBuilder {
+        self.permissions = Some(permissions);
+        self
+    }
+
+    pub fn created_at(mut self, created_at: DateTime<Utc>) -> RoleBuilder {
+        self.created_at = Some(created_at);
+        self
+    }
+
+    pub fn updated_at(mut self, updated_at: DateTime<Utc>) -> RoleBuilder {
+        self.updated_at = Some(updated_at);
+        self
+    }
+
+    pub fn build(self) -> Role {
+        Role {
+            id: self.id.unwrap(),
+            name: self.name.unwrap(),
+            permissions: self.permissions.unwrap(),
+            created_at: self.created_at.unwrap(),
+            updated_at: self.updated_at.unwrap(),
+        }
     }
 }

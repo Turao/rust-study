@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 use super::operations::Operation;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct PermissionId(String);
 
 impl Default for PermissionId {

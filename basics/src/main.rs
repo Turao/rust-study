@@ -33,23 +33,25 @@ async fn main() -> Result<(), Error> {
         info!("{:?}", permission)
     }
 
-    let mut john = domain::subjects::Subject::new("john");
-    john.add_role(engineer_role.get_id());
-
-    // let ok = application::access_checker::AccessChecker::can_subject_perform_operation(&john, &list_users_operation);
-    // info!("ok: {:?}", ok);
-
     let connection_pool = SqlitePool::connect(":memory").await?;
     let mut connection = connection_pool.acquire().await?;
     sqlx::migrate!("./datastore/sqlite").run(&mut connection).await.expect("unable to migrate");
+
+    let role_repository = infrastructure::sqlite::role::SqliteRoleRepository::new(connection_pool.clone());
+    role_repository.save(engineer_role.clone()).await?;
+    let role = role_repository.get_by_id(engineer_role.get_id()).await?.unwrap();
+    info!("{:?}", role);
+
+    let mut john = domain::subjects::Subject::new("john");
+    john.add_role(engineer_role.get_id());
     
-    let permission_repository = infrastructure::repositories::SqlitePermissionRepository::new(connection_pool.clone());
+    let permission_repository = infrastructure::sqlite::permission::SqlitePermissionRepository::new(connection_pool.clone());
     permission_repository.save(list_users_permission.clone()).await?;
     permission_repository.save(update_user_permission.clone()).await?;
 
     info!("{:?}", permission_repository.get_by_id(list_users_permission.get_id()).await?.unwrap());
 
-    let subject_repository = infrastructure::repositories::SqliteSubjectRepository::new(connection_pool.clone());
+    let subject_repository = infrastructure::sqlite::subject::SqliteSubjectRepository::new(connection_pool.clone());
     subject_repository.save(john.clone()).await?;
 
     let john_wick = domain::subjects::Subject::new("john wick");
@@ -61,16 +63,12 @@ async fn main() -> Result<(), Error> {
     info!("{:?}", subject_repository.get_by_id(john_wick.get_id()).await?.unwrap());
     info!("{:?}", subject_repository.get_by_id(baba_yaga.get_id()).await?.unwrap());
 
-    // let mut group = groups::Group::new("engineering_team");
-    // group.add_subject(subjects::Subject::new("homer").get_id());
-    // group.add_subject(subjects::Subject::new("marge").get_id());
-    // group.add_subject(subjects::Subject::new("maggie").get_id());
-    // group.add_subject(subjects::Subject::new("bart").get_id());
-    // group.add_subject(subjects::Subject::new("lisa").get_id());
-    
-
-    let access_checker = application::access_checker::AccessChecker::new(Box::new(subject_repository));
-    let can_access = access_checker.can_access(john.get_id(), list_users_resource.get_id())
+    let access_checker = application::access_checker::AccessChecker::new(
+        Box::new(subject_repository),
+        Box::new(role_repository),
+        Box::new(permission_repository),
+    );
+    let can_access = access_checker.can_access(john_wick.get_id(), list_users_resource.get_id())
         .await
         .expect("failed to check if can access");
     info!("{:?}", can_access);
