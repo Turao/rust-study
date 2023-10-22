@@ -38,11 +38,8 @@ async fn main() -> Result<(), Error> {
     let mut engineer_role = Role::new("engineer");
     engineer_role.add_permission(list_users_permission.get_id());
     engineer_role.add_permission(update_user_permission.get_id());
-    for permission in engineer_role.get_permissions() {
-        info!("{:?}", permission)
-    }
 
-    let connection_pool = SqlitePool::connect(":memory").await?;
+    let connection_pool = SqlitePool::connect("datastore/memory").await?;
     let mut connection = connection_pool.acquire().await?;
     sqlx::migrate!("./datastore/sqlite").run(&mut connection).await.expect("unable to migrate");
 
@@ -71,16 +68,27 @@ async fn main() -> Result<(), Error> {
     info!("{:?}", subject_repository.get_by_id(john.get_id()).await?.unwrap());
     info!("{:?}", subject_repository.get_by_id(john_wick.get_id()).await?.unwrap());
     info!("{:?}", subject_repository.get_by_id(baba_yaga.get_id()).await?.unwrap());
+    
+    let mut subject = subject_repository.get_by_id(john.get_id())
+        .await
+        .expect("failed to fetch john")
+        .expect("john not found");
+
+    subject.rename("shaggy");
+    subject.rename("scooby");
+    info!("subject: {:?}", subject);
+
+    subject_repository.save(subject).await.expect("failed to save subject");
 
     let access_checker = application::access_checker::AccessChecker::new(
         Box::new(subject_repository),
         Box::new(role_repository),
         Box::new(permission_repository),
     );
-    let can_access = access_checker.can_access(john_wick.get_id(), list_users_resource.get_id())
+    let can_invoke = access_checker.can_invoke(john_wick.get_id(), list_users_resource.get_id())
         .await
-        .expect("failed to check if can access");
-    info!("{:?}", can_access);
+        .expect("failed to check if can invoke");
+    info!("{:?}", can_invoke);
 
     Ok(())
 }

@@ -24,7 +24,7 @@ impl AccessChecker {
         }
     }
 
-    pub async fn can_access(&self, subject_id: SubjectId, resource_id: ResourceId) -> Result<bool, ()> {
+    pub async fn can_invoke(&self, subject_id: SubjectId, resource_id: ResourceId) -> Result<bool, ()> {
         let subject = self.subject_repository.get_by_id(subject_id)
             .await
             .expect("failed to fetch subject")

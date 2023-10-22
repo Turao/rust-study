@@ -29,6 +29,7 @@ impl Into<String> for SubjectId {
 #[derive(Debug, Clone)]
 pub struct Subject {
     id: SubjectId,
+    version: i64,
     name: String,
     roles: HashSet<RoleId>,
     created_at: DateTime<Utc>,
@@ -39,6 +40,7 @@ impl Subject {
     pub fn new(name: &str) -> Subject {
         Subject {
             id: SubjectId::default(),
+            version: 0,
             name: name.to_string(),
             roles: HashSet::new(),
             created_at: Utc::now(),
@@ -54,18 +56,30 @@ impl Subject {
         self.id.clone()
     }
 
+    pub fn get_version(&self) -> i64 {
+        self.version
+    }
+
     pub fn get_name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn rename(&mut self, name: &str) {
+        self.name = name.to_string();
+        self.updated_at = Utc::now();
+        self.version += 1;
     }
 
     pub fn add_role(&mut self, roles: RoleId) {
         self.roles.insert(roles);
         self.updated_at = Utc::now();
+        self.version += 1;
     }
 
     pub fn remove_role(&mut self, role: &RoleId) {
         self.roles.remove(role);
         self.updated_at = Utc::now();
+        self.version += 1;
     }
 
     pub fn get_roles(&self) -> HashSet<RoleId> {
@@ -85,6 +99,7 @@ impl Subject {
 
 pub struct SubjectBuilder {
     id: Option<SubjectId>,
+    version: Option<i64>,
     name: Option<String>,
     roles: Option<HashSet<RoleId>>,
     created_at: Option<DateTime<Utc>>,
@@ -95,6 +110,7 @@ impl SubjectBuilder {
     pub fn new() -> Self {
         Self {
             id: None,
+            version: None,
             name: None,
             roles: None,
             created_at: None,
@@ -104,6 +120,11 @@ impl SubjectBuilder {
     
     pub fn id(mut self, id: SubjectId) -> SubjectBuilder {
         self.id = Some(id);
+        self
+    }
+
+    pub fn version(mut self, version: i64) -> SubjectBuilder {
+        self.version = Some(version);
         self
     }
 
@@ -130,6 +151,7 @@ impl SubjectBuilder {
     pub fn build(self) -> Subject {
         Subject {
             id: self.id.unwrap(),
+            version: self.version.unwrap(),
             name: self.name.unwrap(),
             roles: self.roles.unwrap(),
             created_at: self.created_at.unwrap(),
