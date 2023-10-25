@@ -45,14 +45,14 @@ async fn main() -> Result<(), Error> {
     let mut connection = connection_pool.acquire().await?;
     sqlx::migrate!("./datastore/sqlite").run(&mut connection).await.expect("unable to migrate");
 
+    let permission_repository = SqlitePermissionRepository::new(connection_pool.clone());
+    permission_repository.save(list_users_permission.clone()).await?;
+    permission_repository.save(update_user_permission.clone()).await?;
+
     let role_repository = SqliteRoleRepository::new(connection_pool.clone());
     role_repository.save(engineer_role.clone()).await?;
     let role = role_repository.get_by_id(engineer_role.get_id()).await?.unwrap();
     info!("{:?}", role);
-
-    let permission_repository = SqlitePermissionRepository::new(connection_pool.clone());
-    permission_repository.save(list_users_permission.clone()).await?;
-    permission_repository.save(update_user_permission.clone()).await?;
 
     info!("{:?}", permission_repository.get_by_id(list_users_permission.get_id()).await?.unwrap());
 
