@@ -6,7 +6,6 @@ use crate::domain::operations::Operation;
 use crate::domain::permissions::Permission;
 use crate::domain::resources::Resource;
 use crate::domain::roles::Role;
-use crate::domain::subjects::Subject;
 use crate::domain::groups::Group;
 
 use crate::infrastructure::sqlite::group::SqliteGroupRepository;
@@ -14,7 +13,7 @@ use crate::infrastructure::sqlite::permission::SqlitePermissionRepository;
 use crate::infrastructure::sqlite::role::SqliteRoleRepository;
 use crate::infrastructure::sqlite::subject::SqliteSubjectRepository;
 
-use crate::application::subjects::{SubjectServiceImpl, CreateSubjectRequest, DeleteSubjectRequest};
+use crate::application::subjects::{SubjectService, SubjectServiceImpl, CreateSubjectRequest, DeleteSubjectRequest};
 
 mod domain;
 mod application;
