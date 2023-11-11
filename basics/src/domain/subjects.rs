@@ -35,6 +35,7 @@ pub struct Subject {
     roles: HashSet<RoleId>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    deleted_at: Option<DateTime<Utc>>,
 }
 
 impl Subject {
@@ -46,6 +47,7 @@ impl Subject {
             roles: HashSet::new(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
+            deleted_at: None,
         }
     }
 
@@ -95,6 +97,17 @@ impl Subject {
         self.updated_at
     }
 
+    pub fn delete(&mut self) {
+        let now = Utc::now();
+        self.deleted_at = Some(now);
+        self.updated_at = now;
+        self.version += 1;
+    }
+
+    pub fn get_deleted_at(&self) -> Option<DateTime<Utc>> {
+        self.deleted_at
+    }
+
    
 }
 
@@ -105,6 +118,7 @@ pub struct SubjectBuilder {
     roles: Option<HashSet<RoleId>>,
     created_at: Option<DateTime<Utc>>,
     updated_at: Option<DateTime<Utc>>,
+    deleted_at: Option<DateTime<Utc>>,
 }
 
 impl SubjectBuilder {
@@ -116,6 +130,7 @@ impl SubjectBuilder {
             roles: None,
             created_at: None,
             updated_at: None,
+            deleted_at: None,
         }
     }
     
@@ -149,6 +164,11 @@ impl SubjectBuilder {
         self
     }
 
+    pub fn deleted_at(mut self, deleted_at: Option<DateTime<Utc>>) -> SubjectBuilder {
+        self.deleted_at = deleted_at;
+        self
+    }
+
     pub fn build(self) -> Subject {
         Subject {
             id: self.id.unwrap(),
@@ -156,7 +176,8 @@ impl SubjectBuilder {
             name: self.name.unwrap(),
             roles: self.roles.unwrap(),
             created_at: self.created_at.unwrap(),
-            updated_at: self.updated_at.unwrap()
+            updated_at: self.updated_at.unwrap(),
+            deleted_at: self.deleted_at,
         }
     }
 }

@@ -15,6 +15,7 @@ struct SqliteSubjectModel {
     roles: String,
     created_at: i64,
     updated_at: i64,
+    deleted_at: Option<i64>,
 }
 
 impl From<Subject> for SqliteSubjectModel {
@@ -25,7 +26,8 @@ impl From<Subject> for SqliteSubjectModel {
             name: value.get_name(),
             roles: serde_json::to_string(&value.get_roles()).unwrap(),
             created_at: value.get_created_at().timestamp_millis(),
-            updated_at: value.get_updated_at().timestamp_millis()
+            updated_at: value.get_updated_at().timestamp_millis(),
+            deleted_at: value.get_deleted_at().map(|utc| utc.timestamp_millis()),
         }
     }
 }
@@ -39,6 +41,7 @@ impl From<SqliteSubjectModel> for Subject {
             .roles(serde_json::from_str(&value.roles).unwrap())
             .created_at(Utc.timestamp_millis_opt(value.created_at).single().unwrap_or_default())
             .updated_at(Utc.timestamp_millis_opt(value.updated_at).single().unwrap_or_default())
+            .deleted_at(value.deleted_at.map(|ms| Utc.timestamp_millis_opt(ms).single().unwrap_or_default()))
             .build()
     }
 }
@@ -61,9 +64,9 @@ impl Repository<SubjectId, Subject> for SqliteSubjectRepository {
         let model = SqliteSubjectModel::from(entity);
         let mut connection = self.connection_pool.acquire().await?;
         let query = "
-            INSERT INTO subjects VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO subjects VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET
-            version=?, name=?, roles=?, created_at=?, updated_at=?;
+            version=?, name=?, roles=?, created_at=?, updated_at=?, deleted_at=?;
         ";
         sqlx::query(query)
             // insert
@@ -73,12 +76,14 @@ impl Repository<SubjectId, Subject> for SqliteSubjectRepository {
             .bind(model.roles.clone())
             .bind(model.created_at)
             .bind(model.updated_at)
+            .bind(model.deleted_at)
             // update
             .bind(model.version)
             .bind(model.name.clone())
             .bind(model.roles.clone())
             .bind(model.created_at)
             .bind(model.updated_at)
+            .bind(model.deleted_at)
             .execute(&mut *connection).await?;
         Ok(())
     }

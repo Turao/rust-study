@@ -4,5 +4,6 @@ CREATE TABLE IF NOT EXISTS subjects(
     name VARCHAR(200),
     roles VARCHAR(200),
     created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
